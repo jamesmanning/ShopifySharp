@@ -1,13 +1,14 @@
 ﻿#nullable enable
 
 using System;
+using System.Collections.Generic;
 
 namespace ShopifySharp;
 
 public class GraphRequest
 {
     private string? _query { get; set; }
-    private object? _variables { get; set; }
+    private IDictionary<string, object>? _variables { get; set; }
 
     [Obsolete("This property is deprecated, use " + nameof(Query) + " instead.")]
     public string? query
@@ -20,7 +21,7 @@ public class GraphRequest
     public object? variables
     {
         get => _variables;
-        set => _variables = value;
+        set => _variables = value?.ToDictionary();
     }
 
 #if NET6_0_OR_GREATER
@@ -37,7 +38,7 @@ public class GraphRequest
     }
 #endif
 
-    public object? Variables
+    public IDictionary<string, object>? Variables
     {
         get => _variables;
         set => _variables = value;
