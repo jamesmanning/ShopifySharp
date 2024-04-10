@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json.Linq;
-using Newtonsoft.Json;
 using ShopifySharp.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
@@ -87,7 +86,7 @@ public class GraphService : ShopifyService, IGraphService
     [Obsolete("This method is deprecated and will be removed in a future version of ShopifySharp.")]
     public virtual async Task<JsonElement> SendAsync(string graphqlQuery, int? graphqlQueryCost = null, CancellationToken cancellationToken = default)
     {
-        var response = await SendAsync<JsonDocument>(new GraphRequest 
+        var response = await SendAsync<JsonDocument>(new GraphRequest
         {
             Query = graphqlQuery,
             Variables = null,
@@ -100,7 +99,7 @@ public class GraphService : ShopifyService, IGraphService
     [Obsolete("This method is deprecated and will be removed in a future version of ShopifySharp.")]
     public virtual async Task<JsonElement> SendAsync(GraphRequest request, int? graphqlQueryCost = null, CancellationToken cancellationToken = default)
     {
-        var response = await SendAsync<JsonDocument>(new GraphRequest 
+        var response = await SendAsync<JsonDocument>(new GraphRequest
         {
             Query = request.Query,
             Variables = request.Variables,
@@ -115,7 +114,7 @@ public class GraphService : ShopifyService, IGraphService
     public virtual async Task<TResult> SendAsync<TResult>(string graphqlQuery, int? graphqlQueryCost = null, CancellationToken cancellationToken = default)
         where TResult : class
     {
-        return await SendAsync<TResult>(new GraphRequest 
+        return await SendAsync<TResult>(new GraphRequest
         {
             Query = graphqlQuery,
             Variables = null,
@@ -138,7 +137,7 @@ public class GraphService : ShopifyService, IGraphService
         // TODO: add a test for this line that's now been replaced. Are we losing any significant functionality by dropping the `.Single()`? Would this have failed for e.g. mutations that return both `userErrors` and `actualObject`?
         // var ptyElt = elt.EnumerateObject().Single().Value;
 
-        return await SendAsync<TResult>(new GraphRequest 
+        return await SendAsync<TResult>(new GraphRequest
         {
             Query = request.Query,
             Variables = request.Variables,
