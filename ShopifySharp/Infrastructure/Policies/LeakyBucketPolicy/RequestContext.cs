@@ -1,8 +1,7 @@
-﻿namespace ShopifySharp
+﻿namespace ShopifySharp;
+
+public enum RequestContext
 {
-    public enum RequestContext
-    {
-        Foreground,
-        Background
-    }
+    Foreground,
+    Background
 }

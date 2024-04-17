@@ -1,11 +1,10 @@
-﻿namespace ShopifySharp.Infrastructure
+﻿namespace ShopifySharp.Infrastructure.Policies.LeakyBucketPolicy;
+
+internal enum ApiType : byte
 {
-    internal enum APIType : byte
-    {
-        RESTAdmin,
+    RESTAdmin,
 
-        GraphQLAdmin,
+    GraphQLAdmin,
 
-        GraphQLPartner,
-    }
+    GraphQLPartner,
 }
