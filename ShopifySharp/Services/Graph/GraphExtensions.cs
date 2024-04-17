@@ -1,9 +1,17 @@
 #nullable enable
 
-namespace ShopifySharp.Graph;
-
-public class GraphExtensions
+namespace ShopifySharp.Graph
 {
-    // TODO: add extensions properties
+    public class GraphExtensions
+    {
+        // TODO: add extensions properties
+    }
 }
 
+namespace ShopifySharp
+{
+    public class GraphExtensions
+    {
+        public required GraphRequestCostExtension Cost { get; set; }
+    }
+}
