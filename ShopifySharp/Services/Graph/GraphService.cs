@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using ShopifySharp.Infrastructure;
+﻿using ShopifySharp.Infrastructure;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -10,6 +9,8 @@ using System.Threading;
 using System;
 using System.Text.Json;
 using ShopifySharp.Utilities;
+using Newtonsoft.Json.Linq;
+using ShopifySharp.GraphQL;
 
 namespace ShopifySharp;
 
@@ -18,7 +19,7 @@ namespace ShopifySharp;
 /// </summary>
 public class GraphService : ShopifyService, IGraphService
 {
-    private readonly IGraphSerializer _graphSerializer;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly string _apiVersion;
 
     public override string APIVersion => _apiVersion ?? base.APIVersion;
@@ -27,28 +28,28 @@ public class GraphService : ShopifyService, IGraphService
         string myShopifyUrl,
         string shopAccessToken,
         string apiVersion = null,
-        IGraphSerializer graphSerializer = null
+        JsonSerializerOptions jsonSerializerOptions = null
     ) : base(myShopifyUrl, shopAccessToken)
     {
         _apiVersion = apiVersion;
-        _graphSerializer = graphSerializer ?? new GraphSerializer();
+        _jsonSerializerOptions = jsonSerializerOptions;
     }
 
     public GraphService(
         string myShopifyUrl,
         string shopAccessToken,
         IShopifyDomainUtility shopifyDomainUtility,
-        IGraphSerializer graphSerializer = null
+        JsonSerializerOptions jsonSerializerOptions = null
     ) : base(myShopifyUrl, shopAccessToken, shopifyDomainUtility)
     {
-        _graphSerializer = graphSerializer ?? new GraphSerializer();
+        _jsonSerializerOptions = jsonSerializerOptions;
     }
 
     public virtual async Task<T> PostAsync<T>(GraphRequest graphRequest, CancellationToken cancellationToken = default)
     {
         var response = await SendAsync<JsonDocument>(graphRequest, cancellationToken);
         // TODO: return a GraphResult<T>
-        return response.RootElement.GetProperty("data").Deserialize<T>();
+        return response.RootElement.GetProperty("data").Deserialize<T>(_jsonSerializerOptions);
     }
 
     public virtual async Task<JsonDocument> PostAsync(GraphRequest graphRequest, CancellationToken cancellationToken = default)
@@ -153,7 +154,7 @@ public class GraphService : ShopifyService, IGraphService
     /// <param name="cancellationToken"></param>
     protected virtual async Task<T> SendAsync<T>(GraphRequest graphRequest, CancellationToken cancellationToken = default) where T: class
     {
-        var json = _graphSerializer.SerializeToJson(new Dictionary<string, object>
+        var json = JsonSerializer.Serialize(new Dictionary<string, object>
         {
             {"query", graphRequest.Query},
             {"variables", graphRequest.Variables},
@@ -161,14 +162,15 @@ public class GraphService : ShopifyService, IGraphService
         var requestUri = BuildRequestUri("graphql.json");
         var requestContent = new StringContent(json, Encoding.UTF8, "application/json");
         var result = await ExecuteRequestCoreAsync(requestUri, HttpMethod.Post, requestContent, null, graphRequest.EstimatedQueryCost, cancellationToken);
-        var parsedGraphData = _graphSerializer.DeserializeFromJson<ParsedGraphResult<T>>(result.RawResult);
+
+        using var jsonDocument = JsonDocument.Parse(result.RawResult);
 
         if (graphRequest.UserErrorHandling == GraphRequestUserErrorHandling.Throw)
         {
-            ThrowIfResponseContainsErrors(parsedGraphData, result);
+            ThrowIfResponseContainsErrors(jsonDocument, result);
         }
 
-        return _graphSerializer.DeserializeFromJson<T>(result.RawResult);
+        return jsonDocument.Deserialize<T>(_jsonSerializerOptions);
     }
 
     private bool TryParseUserErrors(JsonDocument jsonDocument, out ICollection<UserError> userErrors)
@@ -194,26 +196,24 @@ public class GraphService : ShopifyService, IGraphService
     /// <summary>
     /// Since Graph API Errors come back with error code 200, checking for them in a way similar to the REST API doesn't work well without potentially throwing unnecessary errors.
     /// </summary>
-    /// <exception cref="ShopifyHttpException">Thrown if <paramref name="parsedGraphResult"/> contains any <c>userErrors</c> entries.</exception>
-    private static void ThrowIfResponseContainsErrors<T>(ParsedGraphResult<T> parsedGraphResult, RequestResult<string> requestResult)
+    /// <exception cref="ShopifyHttpException">Thrown if <paramref name="jsonDocument"/> contains any <c>userErrors</c> entries.</exception>
+    private void ThrowIfResponseContainsErrors<T>(JsonDocument jsonDocument, RequestResult<T> requestResult)
     {
-        if (parsedGraphResult?.UserErrors is null)
+        if (!TryParseUserErrors(jsonDocument, out var userErrors))
             return;
 
-        var errorList = new List<string>();
+        var errorMessages = userErrors
+            .Select(u => u.message)
+            .ToList();
 
-        foreach (var error in parsedGraphResult.UserErrors)
-        {
-            if (error.message is not null)
-            {
-                errorList.Add(error.message);
-            }
-        }
+        if (errorMessages.Count == 0)
+            // Suspicious, TryParseUserErrors already checked that the array length was not 0
+            return;
 
-        var message = errorList.FirstOrDefault() ?? "Unable to parse Shopify's error response, please inspect exception's RawBody property and report this issue to the ShopifySharp maintainers.";
+        var message = errorMessages.FirstOrDefault() ?? "Unable to parse Shopify's error response, please inspect exception's RawBody property and report this issue to the ShopifySharp maintainers.";
         var requestId = ParseRequestIdResponseHeader(requestResult.ResponseHeaders);
 
-        throw new ShopifyHttpException(requestResult.RequestInfo, HttpStatusCode.OK, errorList, message, requestResult.RawResult, requestId);
+        throw new ShopifyHttpException(requestResult.RequestInfo, HttpStatusCode.OK, errorMessages, message, requestResult.RawResult, requestId);
     }
 
     /// <summary>
@@ -223,24 +223,8 @@ public class GraphService : ShopifyService, IGraphService
     /// <exception cref="ShopifyException">Thrown if <paramref name="requestResult"/> contains an error.</exception>
     protected virtual void CheckForErrors<T>(RequestResult<T> requestResult)
     {
-        var parsedData = _graphSerializer.DeserializeFromJson<ParsedGraphResult<T>>(requestResult.RawResult);
+        var jsonDocument = JsonDocument.Parse(requestResult.RawResult);
 
-        if (parsedData?.UserErrors is null)
-            return;
-
-        var errorList = new List<string>();
-
-        foreach (var error in parsedData.UserErrors)
-        {
-            if (error.message is not null)
-            {
-                errorList.Add(error.message);
-            }
-        }
-
-        var message = errorList.FirstOrDefault() ?? "Unable to parse Shopify's error response, please inspect exception's RawBody property and report this issue to the ShopifySharp maintainers.";
-        var requestId = ParseRequestIdResponseHeader(requestResult.ResponseHeaders);
-
-        throw new ShopifyHttpException(requestResult.RequestInfo, HttpStatusCode.OK, errorList, message, requestResult.RawResult, requestId);
+        ThrowIfResponseContainsErrors(jsonDocument, requestResult);
     }
 }
