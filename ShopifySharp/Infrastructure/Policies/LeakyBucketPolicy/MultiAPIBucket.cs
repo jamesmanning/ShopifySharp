@@ -26,9 +26,10 @@ internal class MultiShopifyApiBucket
 
     public MultiShopifyApiBucket(Func<RequestContext> getRequestContext)
     {
-        RESTBucket = new LeakyBucket(DEFAULT_REST_MAX_AVAILABLE, DEFAULT_REST_RESTORE_RATE, getRequestContext);
-        GraphQLBucket = new LeakyBucket(DEFAULT_GRAPHQL_MAX_AVAILABLE, DEFAULT_GRAPHQL_RESTORE_RATE, getRequestContext);
-        GraphQLPartnersBucket = new LeakyBucket(DEFAULT_GRAPHQL_PARTNER_MAX_AVAILABLE, DEFAULT_GRAPHQL_PARTNER_RESTORE_RATE, getRequestContext);
+        var queue = new ContextAwareQueue<LeakyBucketPendingRequest>(getRequestContext);
+        RESTBucket = new LeakyBucket(DEFAULT_REST_MAX_AVAILABLE, DEFAULT_REST_RESTORE_RATE, queue);
+        GraphQLBucket = new LeakyBucket(DEFAULT_GRAPHQL_MAX_AVAILABLE, DEFAULT_GRAPHQL_RESTORE_RATE, queue);
+        GraphQLPartnersBucket = new LeakyBucket(DEFAULT_GRAPHQL_PARTNER_MAX_AVAILABLE, DEFAULT_GRAPHQL_PARTNER_RESTORE_RATE, queue);
     }
 
     public async Task WaitForAvailableRESTAsync(CancellationToken cancellationToken)

@@ -1,29 +1,31 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 
 namespace ShopifySharp.Infrastructure.Policies.LeakyBucketPolicy;
 
-internal class ContextAwareQueue<T>
+internal class ContextAwareQueue<T>()
 {
-    private readonly Queue<T> _BackgroundQueue = new Queue<T>();
+    private readonly Queue<T> _backgroundQueue = new Queue<T>();
 
-    private readonly Queue<T> _ForegroundQueue = new Queue<T>();
+    private readonly Queue<T> _foregroundQueue = new Queue<T>();
 
-    private readonly Func<RequestContext> _getContext;
+    private readonly Func<RequestContext>? _getContext;
 
-    public int Count => _BackgroundQueue.Count + _ForegroundQueue.Count;
-
-    public ContextAwareQueue(Func<RequestContext> getContext)
+    public ContextAwareQueue(Func<RequestContext>? getContext = null) : this()
     {
         _getContext = getContext;
     }
 
+    public int Count => _backgroundQueue.Count + _foregroundQueue.Count;
+
     public void Enqueue(T i)
     {
-        (_getContext() == RequestContext.Background ? _BackgroundQueue : _ForegroundQueue).Enqueue(i);
+        var context = _getContext?.Invoke() ?? RequestContext.Foreground;
+        (context == RequestContext.Background ? _backgroundQueue : _foregroundQueue).Enqueue(i);
     }
 
-    public T Peek() => _ForegroundQueue.Count > 0 ? _ForegroundQueue.Peek() : _BackgroundQueue.Peek();
+    public T Peek() => _foregroundQueue.Count > 0 ? _foregroundQueue.Peek() : _backgroundQueue.Peek();
 
-    public T Dequeue() => _ForegroundQueue.Count > 0 ? _ForegroundQueue.Dequeue() : _BackgroundQueue.Dequeue();
+    public T Dequeue() => _foregroundQueue.Count > 0 ? _foregroundQueue.Dequeue() : _backgroundQueue.Dequeue();
 }
