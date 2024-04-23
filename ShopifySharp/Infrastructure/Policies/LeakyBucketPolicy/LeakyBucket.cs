@@ -56,7 +56,7 @@ internal class LeakyBucket
         LastUpdatedAt = _getTime();
     }
 
-    public int TotalWaitingRequests => _waitingRequests.Count;
+    public int PendingRequests => _waitingRequests.Count;
 
     public void SetState(int maximumAvailable, int restoreRatePerSecond, double currentlyAvailable)
     {
