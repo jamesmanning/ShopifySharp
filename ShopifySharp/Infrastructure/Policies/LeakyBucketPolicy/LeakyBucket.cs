@@ -49,12 +49,14 @@ internal class LeakyBucket
             throw new ArgumentOutOfRangeException();
 
         _getTime = getTime;
-        _waitingRequests = new ContextAwareQueue<Request>(getRequestContext ?? (new Func<RequestContext>(() => RequestContext.Foreground)));
+        _waitingRequests = new ContextAwareQueue<Request>(getRequestContext);
         MaximumAvailable = maximumAvailable;
         RestoreRatePerSecond = restoreRatePerSecond;
         LastCurrentlyAvailable = maximumAvailable;
         LastUpdatedAt = _getTime();
     }
+
+    public int TotalWaitingRequests => _waitingRequests.Count;
 
     public void SetState(int maximumAvailable, int restoreRatePerSecond, double currentlyAvailable)
     {

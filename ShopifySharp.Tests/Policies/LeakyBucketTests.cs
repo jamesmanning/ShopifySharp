@@ -15,8 +15,8 @@ public class LeakyBucketTests
     public async Task WaitForAvailableAsync_ShouldDequeueRequestAfterAwaitingIt()
     {
         // Arrange
-        var queue = new ContextAwareQueue<LeakyBucketPendingRequest>(() => RequestContext.Foreground);
-        var bucket = new LeakyBucket(10, 1, queue);
+        var now = DateTime.UtcNow;
+        var bucket = new LeakyBucket(10, 1, () => now);
         var cts = new CancellationTokenSource();
 
         // Act

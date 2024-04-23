@@ -6,6 +6,7 @@ using Xunit;
 namespace ShopifySharp.Tests;
 
 [Trait("Category", "LeakyBucket"), Trait("Category", "DotNetFramework"), Collection("DotNetFramework tests")]
+
 public class LeakyBucket_Tests
 {
     private DateTime now;
@@ -16,8 +17,7 @@ public class LeakyBucket_Tests
     public void RunSynchronouslyIfEnoughAvailable()
     {
         now = DateTime.UtcNow;
-
-        var b = new LeakyBucket(40, 2, () => now, _contextAwareQueue);
+        var b = new LeakyBucket(40, 2, () => now);
         Assert.Equal(40, b.ComputedCurrentlyAvailable);
 
         Assert.True(b.WaitForAvailableAsync(1).IsCompleted);
@@ -38,7 +38,7 @@ public class LeakyBucket_Tests
     {
         now = DateTime.UtcNow;
 
-        var b = new LeakyBucket(10, 2, () => now, _contextAwareQueue);
+        var b = new LeakyBucket(10, 2, () => now);
         Assert.Equal(10, b.ComputedCurrentlyAvailable);
 
         Assert.True(b.WaitForAvailableAsync(9).IsCompleted);
@@ -56,7 +56,7 @@ public class LeakyBucket_Tests
     {
         now = DateTime.UtcNow;
 
-        var b = new LeakyBucket(10, 2, () => now, _contextAwareQueue);
+        var b = new LeakyBucket(10, 2, () => now);
         Assert.Equal(10, b.ComputedCurrentlyAvailable);
 
         Assert.True(b.WaitForAvailableAsync(5).IsCompleted);
@@ -87,7 +87,7 @@ public class LeakyBucket_Tests
     {
         now = DateTime.UtcNow;
 
-        var b = new LeakyBucket(10, 2, () => now, _contextAwareQueue);
+        var b = new LeakyBucket(10, 2, () => now);
         Assert.Equal(10, b.ComputedCurrentlyAvailable);
 
         Assert.True(b.WaitForAvailableAsync(5).IsCompleted);
@@ -110,7 +110,7 @@ public class LeakyBucket_Tests
     {
         now = DateTime.UtcNow;
 
-        var b = new LeakyBucket(10, 2, () => now, _contextAwareQueue);
+        var b = new LeakyBucket(10, 2, () => now);
         Assert.Equal(10, b.ComputedCurrentlyAvailable);
 
         Assert.True(b.WaitForAvailableAsync(9).IsCompleted);
@@ -126,7 +126,7 @@ public class LeakyBucket_Tests
         Assert.False(task3.IsCompleted);
 
         Assert.Equal(1, b.ComputedCurrentlyAvailable);
-            
+
         await PassSeconds(1);
         Assert.True(task1.IsCompleted);
         Assert.False(task2.IsCompleted);

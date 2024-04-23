@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace ShopifySharp.Infrastructure.Policies.LeakyBucketPolicy;
 
@@ -21,8 +22,23 @@ internal class ContextAwareQueue<T>()
 
     public void Enqueue(T i)
     {
-        var context = _getContext?.Invoke() ?? RequestContext.Foreground;
-        (context == RequestContext.Background ? _backgroundQueue : _foregroundQueue).Enqueue(i);
+        var context = _getContext?.Invoke();
+
+        switch (context)
+        {
+            case RequestContext.Background:
+                _backgroundQueue.Enqueue(i);
+                break;
+            case RequestContext.Foreground:
+                _foregroundQueue.Enqueue(i);
+                break;
+            case null:
+                // If no context function is set, default to queuing on the foreground
+                _foregroundQueue.Enqueue(i);
+                break;
+            default:
+                throw new SwitchExpressionException(context);
+        }
     }
 
     public T Peek() => _foregroundQueue.Count > 0 ? _foregroundQueue.Peek() : _backgroundQueue.Peek();
