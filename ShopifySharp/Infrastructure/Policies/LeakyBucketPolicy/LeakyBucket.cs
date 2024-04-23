@@ -118,10 +118,9 @@ internal class LeakyBucket
     {
         _cancelNextSchedule?.Cancel();
         _cancelNextSchedule = new CancellationTokenSource();
-        var waitFor = TimeSpan.FromSeconds(Math.Max(0, (r.cost - ComputedCurrentlyAvailable) / (float)RestoreRatePerSecond));
+        var waitFor = ComputeRequestDelay(r.cost);
         _ = Task.Delay(waitFor, _cancelNextSchedule.Token)
-            .ContinueWith(_ => TryGrantNextPendingRequest(),
-                TaskContinuationOptions.OnlyOnRanToCompletion);
+            .ContinueWith(_ => TryGrantNextPendingRequest(), TaskContinuationOptions.OnlyOnRanToCompletion);
     }
 
     private void TryGrantNextPendingRequest()
@@ -143,4 +142,12 @@ internal class LeakyBucket
                 ScheduleTryGrantNextPendingRequest(_waitingRequests.Peek());
         }
     }
+
+    private TimeSpan ComputeRequestDelay(int requestCost) =>
+        TimeSpan.FromSeconds(
+            Math.Max(
+                0,
+                (requestCost - ComputedCurrentlyAvailable) / (float)RestoreRatePerSecond
+            )
+        );
 }
