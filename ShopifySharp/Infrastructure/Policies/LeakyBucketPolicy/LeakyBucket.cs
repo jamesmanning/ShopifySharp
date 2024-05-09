@@ -38,12 +38,21 @@ internal class LeakyBucket
 
     private CancellationTokenSource _cancelNextSchedule;
 
-    public LeakyBucket(int maximumAvailable, int restoreRatePerSecond, Func<RequestContext> getRequestContext)
+    public LeakyBucket(
+        int maximumAvailable,
+        int restoreRatePerSecond,
+        Func<RequestContext> getRequestContext
+    )
         : this(maximumAvailable, restoreRatePerSecond, () => DateTime.UtcNow, getRequestContext)
     {
     }
 
-    internal LeakyBucket(int maximumAvailable, int restoreRatePerSecond, Func<DateTime> getTime, Func<RequestContext> getRequestContext = null)
+    internal LeakyBucket(
+        int maximumAvailable,
+        int restoreRatePerSecond,
+        Func<DateTime> getTime,
+        Func<RequestContext> getRequestContext = null
+    )
     {
         if (maximumAvailable <= 0 || restoreRatePerSecond <= 0)
             throw new ArgumentOutOfRangeException();
@@ -127,6 +136,7 @@ internal class LeakyBucket
     {
         lock (_lock)
         {
+            // TODO: check this next line, the .Peek().cancelToken.IsCancellationRequested seems like it could be incorrect
             while (_waitingRequests.Count > 0 &&
                    (_waitingRequests.Peek().cancelToken.IsCancellationRequested || ComputedCurrentlyAvailable >= _waitingRequests.Peek().cost))
             {

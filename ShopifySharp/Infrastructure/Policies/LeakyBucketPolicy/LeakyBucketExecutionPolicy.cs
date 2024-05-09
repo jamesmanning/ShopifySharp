@@ -67,13 +67,22 @@ public class LeakyBucketExecutionPolicy : IRequestExecutionPolicy
     /// RequestContext.Foreground can be used for requests where a user is waiting (e.g loading a web page to show results of query).
     /// RequestContext.Background can be used for background requests triggered by job, where no user is waiting.
     /// By default, all requests are served in FIFO order</param>
-    public LeakyBucketExecutionPolicy(int maxRetriesPerNonLimitedRequest, bool retryUnexpectedRateLimitResponse = false, Func<RequestContext> getRequestContext = null)
+    public LeakyBucketExecutionPolicy(
+        int maxRetriesPerNonLimitedRequest,
+        bool retryUnexpectedRateLimitResponse = false,
+        Func<RequestContext> getRequestContext = null
+    )
     {
         _responseClassifier = new ResponseClassifier(retryUnexpectedRateLimitResponse, maxRetriesPerNonLimitedRequest);
         _getRequestContext = getRequestContext ?? (() => RequestContext.Foreground);
     }
 
-    public async Task<RequestResult<T>> Run<T>(CloneableRequestMessage baseRequest, ExecuteRequestAsync<T> executeRequestAsync, CancellationToken cancellationToken, int? graphqlQueryCost = null)
+    public async Task<RequestResult<T>> Run<T>(
+        CloneableRequestMessage baseRequest,
+        ExecuteRequestAsync<T> executeRequestAsync,
+        CancellationToken cancellationToken,
+        int? graphqlQueryCost = null
+    )
     {
         var accessToken = GetAccessToken(baseRequest);
         var bucket = accessToken == null ? null : _shopAccessTokenToLeakyBucket.GetOrAdd(accessToken, _ => new MultiShopifyApiBucket(_getRequestContext));

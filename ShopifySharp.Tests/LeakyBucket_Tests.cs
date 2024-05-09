@@ -6,7 +6,6 @@ using Xunit;
 namespace ShopifySharp.Tests;
 
 [Trait("Category", "LeakyBucket"), Trait("Category", "DotNetFramework"), Collection("DotNetFramework tests")]
-
 public class LeakyBucket_Tests
 {
     private DateTime now;
