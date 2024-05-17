@@ -24,23 +24,16 @@ public record ExponentialRetryPolicyOptions
     /// </remarks>
     public bool FirstRetryIsImmediate { get; set; }
 
-#if NET8_0_OR_GREATER
-    public required int InitialBackoffInMilliseconds { get; set; }
+    public int InitialBackoffInMilliseconds { get; set; }
 
     /// <summary>
     /// The maximum amount of time that can be spent waiting before retrying a request. This is an effective cap on the
     /// exponential growth of the policy's retry delay, which could eventually lead to an overflow without it.
     /// </summary>
-    public required TimeSpan MaximumDelayBetweenRetries { get; set; }
-#else
-    public int InitialBackoffInMilliseconds { get; set; }
-    /// <summary>
-    /// The maximum amount of time that can be spent waiting before retrying a request. This is an effective cap on the
-    /// exponential growth of the policy's retry delay, which could eventually lead to an overflow without it.
-    /// </summary>
     public TimeSpan MaximumDelayBetweenRetries { get; set; }
-#endif
+
     public int? MaximumRetriesBeforeRequestCancellation { get; set; }
+
     public TimeSpan? MaximumDelayBeforeRequestCancellation { get; set; }
 
     /// <summary>
