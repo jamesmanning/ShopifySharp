@@ -74,6 +74,18 @@ public class ServiceCollectionExtensionTests
     }
 
     [Fact]
+    public void AddShopifySharpRequestExecutionPolicy_WhenThePolicyIsExponentialRetry_AndTheOptionsAlreadyExistInDI_ShouldUseTheExistingOptions()
+    {
+        Assert.Fail("not implemented");
+    }
+
+    [Fact]
+    public void AddShopifySharpRequestExecutionPolicy_WhenThePolicyIsExponentialRetry_AndTheOptionsAreConfigured_ShouldUseTheConfiguredOptions()
+    {
+        Assert.Fail("not implemented");
+    }
+
+    [Fact]
     public void AddShopifySharpUtilities_AddsUtilities()
     {
         // Setup
@@ -250,6 +262,18 @@ public class ServiceCollectionExtensionTests
             .NotBeNull()
             .And
             .BeOfType<ExponentialRetryPolicy>();
+    }
+
+    [Fact]
+    public void AddShopifySharp_WhenThePolicyIsExponentialRetry_AndTheOptionsAlreadyExistInDI_ShouldUseTheExistingOptions()
+    {
+        Assert.Fail("not implemented");
+    }
+
+    [Fact]
+    public void AddShopifySharp_WhenThePolicyIsExponentialRetry_AndTheOptionsAreConfigured_ShouldUseTheConfiguredOptions()
+    {
+        Assert.Fail("not implemented");
     }
 
     [Theory]
