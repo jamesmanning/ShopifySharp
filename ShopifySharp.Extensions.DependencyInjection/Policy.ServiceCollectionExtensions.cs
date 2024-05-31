@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -21,36 +22,73 @@ public static partial class ServiceCollectionExtensions
     public static IServiceCollection AddShopifySharpRequestExecutionPolicy<T>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where T : class, IRequestExecutionPolicy
     {
-        services.TryAddPolicyConfigurationOptions();
-        services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), typeof(T), lifetime));
-        return services;
+        return services.TryAddDefaultPolicyOptions(lifetime)
+            .AddPolicyFactory(lifetime);
     }
 
     public static IServiceCollection AddShopifySharpRequestExecutionPolicyOptions<TOptions>(this IServiceCollection services, Action<TOptions> configure)
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
         return services
-            .TryAddDefaultPolicyOptions<TOptions>()
+            .TryAddDefaultPolicyOptions(ServiceLifetime.Singleton)
             .Configure(configure)
-            .PostConfigure<IRequestExecutionPolicyOptions>(x => x.Validate());
+            .PostConfigure<TOptions>(x => x.Validate());
     }
 
-    private static IServiceCollection TryAddDefaultPolicyOptions<TOptions>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
+    private static IServiceCollection TryAddDefaultPolicyOptions(this IServiceCollection services, ServiceLifetime lifetime)
     {
-        services.Configure()
-        services.TryAdd(
-        );
+        // Add more policy option types here as they become available
+        services.TryAdd([CreateServiceDescriptor<ExponentialRetryPolicyOptions>(lifetime)]);
+        return services;
+    }
 
+    private static IServiceCollection AddPolicyFactory(this IServiceCollection services, ServiceLifetime lifetime)
+    {
         return services;
 
-        static ServiceDescriptor CreateServiceDescriptor<T>(T optionsValue, string serviceKey, ServiceLifetime lifetime)
-            where T : class, new() =>
-            new (typeof(IOptions<T>), serviceKey, (sp, key) =>
-            {
-                IOptions<T> options = new OptionsWrapper<T>(optionsValue);
-                return options;
-            }, lifetime);
+        static List<ServiceDescriptor> CreatePolicyDescriptor<TPolicy, TPolicyOptions>(ServiceLifetime lifetime)
+            where TPolicy : class, IRequestExecutionPolicy
+            where TPolicyOptions : class, IRequestExecutionPolicyOptions<TPolicyOptions>, new()
+        {
+            return
+            [
+                new ServiceDescriptor(typeof(IRequestExecutionPolicy), null, (sp, key) =>
+                {
+                    var options = sp.GetRequiredService<TPolicyOptions>();
+                    return options.CreatePolicy();
+                }, lifetime)
+            ];
+        }
+
+        services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), null, (sp, key) =>
+        {
+            var options = sp.GetService<IOptions<ExponentialRetryPolicyOptions>>();
+            if (options is not null)
+                return new ExponentialRetryPolicy(options.Value);
+
+            var existingOptions = sp.GetService<ExponentialRetryPolicyOptions>();
+            if (existingOptions is not null)
+                return new ExponentialRetryPolicy(existingOptions);
+
+            var defaultOptionsKey = GetKeyedDefaultOptionsKey<ExponentialRetryPolicyOptions>();
+            var defaultOptions = sp.GetRequiredKeyedService<ExponentialRetryPolicyOptions>(defaultOptionsKey);
+            return new ExponentialRetryPolicy(defaultOptions);
+        }, lifetime));
+
+        return services;
+    }
+
+    private static ServiceDescriptor CreateServiceDescriptor<TOptions>(ServiceLifetime lifetime)
+        where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
+    {
+        var defaultServiceKey = GetKeyedDefaultOptionsKey<TOptions>();
+        var defaultValues = TOptions.Default();
+
+        return new ServiceDescriptor(typeof(IOptions<TOptions>), defaultServiceKey, (_, _) =>
+        {
+            IOptions<TOptions> options = new OptionsWrapper<TOptions>(defaultValues);
+            return options;
+        }, lifetime);
     }
 
     private static string GetKeyedDefaultOptionsKey<TOptions>()
