@@ -27,4 +27,9 @@
   <ItemGroup>
     <PackageReference Include="microsoft.extensions.dependencyinjection" Version="8.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Policy.ServiceCollectionExtensions.cs">
+      <DependentUpon>ServiceCollectionExtensions.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

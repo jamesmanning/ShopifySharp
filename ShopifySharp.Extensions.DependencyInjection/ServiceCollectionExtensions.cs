@@ -6,6 +6,7 @@ using ShopifySharp.Utilities;
 using System.Reflection;
 using System.Linq;
 using ShopifySharp.Infrastructure.Policies.ExponentialRetry;
+using Microsoft.Extensions.Options;
 
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable UnusedType.Global
@@ -14,44 +15,8 @@ using ShopifySharp.Infrastructure.Policies.ExponentialRetry;
 
 namespace ShopifySharp.Extensions.DependencyInjection;
 
-public static class ServiceCollectionExtensions
+public static partial class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Adds a <see cref="IRequestExecutionPolicy"/> to your Dependency Injection container. ShopifySharp service factories
-    /// managed by your container will use this policy when creating ShopifySharp services.
-    /// <p>Note: Policies are not true middleware, ShopifySharp services can only use one policy at this time.</p>2
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="lifetime">The lifetime of <see cref="IRequestExecutionPolicy"/>.</param>
-    /// <typeparam name="T">A class that implements ShopifySharp's <see cref="IRequestExecutionPolicy"/> interface.</typeparam>
-    public static IServiceCollection AddShopifySharpRequestExecutionPolicy<T>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        where T : class, IRequestExecutionPolicy
-    {
-        services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), typeof(T), lifetime));
-        return services;
-    }
-
-    /// <summary>
-    /// Adds an <see cref="ExponentialRetryPolicy"/> to your Dependency Injection container. ShopifySharp service factories
-    /// managed by your container will use this policy when creating ShopifySharp services.
-    /// <p>Note: Policies are not true middleware, ShopifySharp services can only use one policy at this time.</p>2
-    /// </summary>
-    /// <param name="services"></param>
-    /// <param name="configureOptions">An action for configuring the policy's required <see cref="ExponentialRetryPolicyOptions" />.</param>
-    /// <param name="lifetime">The lifetime of <see cref="IRequestExecutionPolicy"/>.</param>
-    /// <typeparam name="TService">The <see cref="ExponentialRetryPolicy" />, or a class that extends it and implements the <see cref="IRequestExecutionPolicy"/> interface.</typeparam>
-    public static IServiceCollection AddShopifySharpRequestExecutionPolicy<TService>(this IServiceCollection services, Action<ExponentialRetryPolicyOptions> configureOptions, ServiceLifetime lifetime = ServiceLifetime.Singleton) where TService : ExponentialRetryPolicy, IRequestExecutionPolicy
-    {
-        var options = ExponentialRetryPolicyOptions.Default();
-        configureOptions.Invoke(options);
-        options.Validate();
-
-        services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), typeof(ExponentialRetryPolicy), lifetime));
-        services.Add(new ServiceDescriptor(typeof(ExponentialRetryPolicyOptions), options));
-
-        return services;
-    }
-
     /// <summary>
     /// Adds ShopifySharp's utilities to your Dependency Injection container. Includes the following utilities:
     /// <list type="bullet">
@@ -144,6 +109,7 @@ public static class ServiceCollectionExtensions
         where T : class, IRequestExecutionPolicy
     {
         return services
+            .TryAddPolicyConfigurationOptions()
             .AddShopifySharpRequestExecutionPolicy<T>(lifetime)
             .AddShopifySharpUtilities(lifetime: lifetime)
             .AddShopifySharpServiceFactories(lifetime: lifetime);
@@ -168,6 +134,7 @@ public static class ServiceCollectionExtensions
     ) where TService : ExponentialRetryPolicy, IRequestExecutionPolicy
     {
         return services
+            .TryAddPolicyConfigurationOptions()
             .AddShopifySharpRequestExecutionPolicy<TService>(configureOptions, lifetime)
             .AddShopifySharpUtilities(lifetime: lifetime)
             .AddShopifySharpServiceFactories(lifetime: lifetime);

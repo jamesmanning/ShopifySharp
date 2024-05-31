@@ -8,7 +8,7 @@ namespace ShopifySharp.Infrastructure.Policies.ExponentialRetry;
 /// <see cref="MaximumRetriesBeforeRequestCancellation"/> or <see cref="MaximumDelayBeforeRequestCancellation"/>.
 /// If both values are null, the policy will throw an exception when it calls <see cref="ExponentialRetryPolicyOptions.Validate()"/>.
 /// </summary>
-public record ExponentialRetryPolicyOptions
+public record ExponentialRetryPolicyOptions : IRequestExecutionPolicyOptions<ExponentialRetryPolicyOptions>
 {
     /// <summary>
     /// Indicates whether the policy should immediately retry the first failure per request before applying the
