@@ -109,7 +109,7 @@ public static partial class ServiceCollectionExtensions
         where T : class, IRequestExecutionPolicy
     {
         return services
-            .TryAddDefaultPolicyOptions(lifetime)
+            .TryAddPolicyOptionFactories(lifetime)
             .AddShopifySharpRequestExecutionPolicy<T>(lifetime)
             .AddShopifySharpUtilities(lifetime: lifetime)
             .AddShopifySharpServiceFactories(lifetime: lifetime);
