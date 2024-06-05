@@ -25,7 +25,7 @@ public static partial class ServiceCollectionExtensions
         where TPolicy : class, IRequestExecutionPolicy
     {
         services.TryAddPolicyOptionFactories(lifetime)
-            .TryAddPolicyFactories(lifetime);
+            .TryAddPolicyFactory<TPolicy>(lifetime);
 
         services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), PolicyKey, typeof(TPolicy), lifetime));
         services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), null, (sp, key) =>
@@ -49,24 +49,39 @@ public static partial class ServiceCollectionExtensions
             .PostConfigure<TOptions>(x => x.Validate());
     }
 
-    private static IServiceCollection TryAddPolicyFactories(this IServiceCollection services, ServiceLifetime lifetime)
+    private static IServiceCollection TryAddPolicyFactory<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime)
+        where TPolicy : class, IRequestExecutionPolicy
     {
-        var assembly = Assembly.GetAssembly(typeof(IRequestExecutionPolicyFactory));
-        var factoryTypes = assembly!.GetTypes()
-            .Where(t => t is { IsAbstract: false, IsInterface: false })
-            .Where(t => t.GetInterfaces().Any(i =>
-                i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestExecutionPolicyFactory)));
+        const string serviceKey = "ShopifySharp.DI.DesiredPolicy.Factory";
 
-        foreach (var type in factoryTypes)
+        // TODO:
+        // Step 1: Register policy options factory if the TPolicy is a type that requires options
+        // Step 2: Register the IRequestExecutionPolicy and policy class itself
+        // Step 3: Register the policy factory, which pulls the policy from DI (and the policy pulls its options from DI as well.)
+
+        if (typeof(TPolicy) == typeof(ExponentialRetryPolicy))
         {
-            var serviceType = type.GetInterfaces()
-                .FirstOrDefault(i => !i.IsGenericType);
 
-            if(serviceType != null)
-            {
-                services.TryAdd(new ServiceDescriptor(serviceType, type, lifetime));
-            }
         }
+
+        services.TryAdd(new ServiceDescriptor(typeof(IRequestExecutionPolicy), serviceKey, (sp, _) =>
+        {
+            var existingPolicy = sp.GetService<TPolicy>();
+            if (existingPolicy is not null)
+                return existingPolicy;
+
+            // TODO: find some way to see if we can call `new TPolicy()` *and* `new TPolicy(policyOptions)` here
+            if (typeof(TPolicy) == typeof(ExponentialRetryPolicy))
+            {
+                var p = new ExponentialRetryPolicy(ExponentialRetryPolicyOptions.Default());
+            }
+            else
+            {
+
+            }
+
+            return new DefaultRequestExecutionPolicy();
+        }, lifetime));
 
         return services;
     }
@@ -90,6 +105,11 @@ public static partial class ServiceCollectionExtensions
                 {
 
                 }), lifetime);
+
+                if (typeof(TPolicy) == typeof(IRequestExecutionPolicyOptions<ExponentialRetryPolicyOptions>))
+                {
+
+                }
             }
         }
 
