@@ -57,6 +57,27 @@ public static partial class ServiceCollectionExtensions
 
         if (typeof(TPolicy) == typeof(ExponentialRetryPolicy))
         {
+            // TODO: make this generic so it's future proof/works with any custom TPolicy that needs options. Add an interface
+            //       named IRequiresPolicyOptions<TPolicyOptions> so we can get a reference to the options type.
+            // TODO: check if the keyed services stuff can be simplified somehow – if services of different types share the
+            //       same key, can they automatically instantiate each other like normal DI?
+            // TODO: investigate using a keyed service provider if the shared key doesn't pan out.
+                     // public static void AddPolicy(this IServiceCollection services)
+                     // {
+                     //     // Register the keyed PolicyOptions
+                     //     services.AddKeyedSingleton("FooOptions", new PolicyOptions { Foos = 42 });
+                     //
+                     //     // Register Policy as singleton and resolve its dependencies in a separate setup
+                     //     services.AddSingleton<Policy, KeyedPolicyResolver>();
+                     // }
+                     //
+                     // public class KeyedPolicyResolver : Policy
+                     // {
+                     //     public KeyedPolicyResolver(IServiceProvider provider)
+                     //         : base(provider.GetKeyedService<PolicyOptions>("FooOptions"))
+                     //     {
+                     //     }
+                     // }
 
             services.TryAddPolicyOptionsFactory<ExponentialRetryPolicyOptions>(lifetime);
             // Use a completely separate ServiceDescriptor factory to create the policy and policy factory when the
