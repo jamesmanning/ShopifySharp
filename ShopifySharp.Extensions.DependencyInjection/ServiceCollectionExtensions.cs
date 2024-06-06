@@ -104,13 +104,12 @@ public static partial class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <param name="lifetime">The lifetime of all ShopifySharp's Dependency Injection services</param>
-    /// <typeparam name="T"></typeparam>
-    public static IServiceCollection AddShopifySharp<T>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-        where T : class, IRequestExecutionPolicy
+    /// <typeparam name="TPolicy"></typeparam>
+    public static IServiceCollection AddShopifySharp<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TPolicy : class, IRequestExecutionPolicy
     {
         return services
-            .TryAddPolicyOptionFactories(lifetime)
-            .AddShopifySharpRequestExecutionPolicy<T>(lifetime)
+            .AddShopifySharpRequestExecutionPolicy<TPolicy>(lifetime)
             .AddShopifySharpUtilities(lifetime: lifetime)
             .AddShopifySharpServiceFactories(lifetime: lifetime);
     }
