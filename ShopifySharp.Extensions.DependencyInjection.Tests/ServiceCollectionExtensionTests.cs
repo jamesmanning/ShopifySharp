@@ -244,7 +244,11 @@ public class ServiceCollectionExtensionTests
         var container = new ServiceCollection();
 
         // Act
-        container.AddShopifySharp<ExponentialRetryPolicy>();
+        container.AddShopifySharp<ExponentialRetryPolicy, ExponentialRetryPolicyOptions>(x =>
+        {
+            x.FirstRetryIsImmediate = true;
+            x.InitialBackoffInMilliseconds = 1000;
+        });
 
         // Assert
         var serviceProvider = container.BuildServiceProvider();

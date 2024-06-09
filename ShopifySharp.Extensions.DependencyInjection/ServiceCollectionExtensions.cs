@@ -113,4 +113,30 @@ public static partial class ServiceCollectionExtensions
             .AddShopifySharpUtilities(lifetime: lifetime)
             .AddShopifySharpServiceFactories(lifetime: lifetime);
     }
+
+    /// <summary>
+    /// Adds all of ShopifySharp's Dependency Injection services to your DI container. This is a convenience method and
+    /// simply calls the following extensions sequentially:
+    /// <list type="bullet">
+    /// <item><see cref="AddShopifySharpRequestExecutionPolicy{T}(IServiceCollection,ServiceLifetime)"/></item>
+    /// <item><see cref="AddShopifySharpUtilities"/></item>
+    /// </list>
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="configure">A function used to configure the options for the execution policy.</param>
+    /// <param name="lifetime">The lifetime of all ShopifySharp's Dependency Injection services</param>
+    /// <typeparam name="TPolicy">A class that implements ShopifySharp's <see cref="IRequestExecutionPolicy"/> interface.</typeparam>
+    /// <typeparam name="TOptions"></typeparam>
+    public static IServiceCollection AddShopifySharp<TPolicy, TOptions>(
+        this IServiceCollection services,
+        Action<TOptions> configure,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        where TPolicy : class, IRequestExecutionPolicy, IRequestExecutionPolicyRequiresOptions<TOptions>
+        where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
+    {
+        return services
+            .AddShopifySharpRequestExecutionPolicy<TPolicy, TOptions>(configure, lifetime)
+            .AddShopifySharpUtilities(lifetime: lifetime)
+            .AddShopifySharpServiceFactories(lifetime: lifetime);
+    }
 }
