@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -55,8 +57,9 @@ public static partial class ServiceCollectionExtensions
         // Step 3: Register the IRequestExecutionPolicy and policy class itself
         // Step 4: Register the policy factory, which pulls the policy from DI (and the policy pulls its options from DI as well.)
 
-        if (typeof(TPolicy) == typeof(ExponentialRetryPolicy))
+        if (TryGetPolicyOptionsType<TPolicy>(out var policyOptionsType))
         {
+            Console.WriteLine("policy type is {0}", policyOptionsType.Name);
             // TODO: make this generic so it's future proof/works with any custom TPolicy that needs options. Add an interface
             //       named IRequiresPolicyOptions<TPolicyOptions> so we can get a reference to the options type.
             // TODO: check if the keyed services stuff can be simplified somehow – if services of different types share the
@@ -79,7 +82,8 @@ public static partial class ServiceCollectionExtensions
                      //     }
                      // }
 
-            services.TryAddPolicyOptionsFactory<ExponentialRetryPolicyOptions>(lifetime);
+            services.TryAddPolicyOptionsFactory<>()
+
             // Use a completely separate ServiceDescriptor factory to create the policy and policy factory when the
             // policy type requires options.
             services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), PolicyKey, (sp, _) =>
@@ -104,14 +108,18 @@ public static partial class ServiceCollectionExtensions
     private static IServiceCollection TryAddPolicyOptionsFactory<TOptions>(this IServiceCollection services, ServiceLifetime lifetime)
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
-        var defaultOptionsKey = GetDefaultPolicyOptionsKey<TOptions>();
+        return services.TryAddPolicyOptionsFactory(typeof(TOptions), lifetime);
+    }
 
-        services.TryAdd(new ServiceDescriptor(typeof(TOptions), defaultOptionsKey, (_, _) => TOptions.Default(), lifetime));
-        services.TryAdd(new ServiceDescriptor(typeof(TOptions), PolicyOptionsKey, (sp, _) =>
+    private static IServiceCollection TryAddPolicyOptionsFactory(this IServiceCollection services, Type policyOptionsType, ServiceLifetime lifetime)
+    {
+        var defaultOptionsKey = GetDefaultPolicyOptionsKey(policyOptionsType);
+
+        services.TryAdd(new ServiceDescriptor(policyOptionsType, defaultOptionsKey, (_, _) => TOptions.Default(), lifetime));
+        services.TryAdd(new ServiceDescriptor(policyOptionsType, PolicyOptionsKey, (sp, _) =>
         {
             // Always prefer to use IOptions<TOptions> if available
-            var optionsWrappedValue = sp.GetService<IOptions<TOptions>>();
-            if (optionsWrappedValue is not null)
+            if (sp.GetService(Type.MakeGenericSignatureType(typeof(IOptions<>), policyOptionsType)) is IOptions<object> optionsWrappedValue)
                 return optionsWrappedValue.Value;
 
             var rawValue = sp.GetService<TOptions>();
@@ -121,11 +129,41 @@ public static partial class ServiceCollectionExtensions
         return services;
     }
 
-    private static string GetDefaultPolicyOptionsKey<TOptions>()
-        where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
+    private static string GetDefaultPolicyOptionsKey(Type policyOptionsType)
     {
         const string keyPrefix = "ShopifySharp.Extensions.DependencyInjection.PolicyOptions.Default.";
-        var type = typeof(TOptions);
-        return keyPrefix + type.Name;
+        return keyPrefix + policyOptionsType.Name;
+    }
+
+    private static bool TryGetPolicyOptionsType<TPolicy>([NotNullWhen(true)] out Type? optionsType)
+        where TPolicy : IRequestExecutionPolicy
+    {
+        optionsType = null;
+
+        foreach (var type in typeof(TPolicy).GetInterfaces())
+        {
+            if (!type.IsGenericType || !type.IsInterface)
+                continue;
+
+            var interfaces = type.GetInterfaces();
+
+            if (!interfaces.Contains(typeof(IRequestExecutionPolicyRequiresOptions)))
+                continue;
+
+            var genericArguments = type.GetGenericArguments();
+
+            if (genericArguments.Length != 1)
+                continue;
+
+            var targetType = typeof(IRequestExecutionPolicyRequiresOptions<>).MakeGenericType(genericArguments);
+
+            if (targetType != type)
+                continue;
+
+            optionsType = genericArguments[0];
+            return true;
+        }
+
+        return false;
     }
 }

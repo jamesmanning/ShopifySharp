@@ -249,7 +249,6 @@ public class ServiceCollectionExtensionTests
         // Assert
         var serviceProvider = container.BuildServiceProvider();
         var policy = serviceProvider.GetService<IRequestExecutionPolicy>();
-        // var options = serviceProvider.GetService<IOptions<ExponentialRetryPolicyOptions>>();
 
         policy.Should()
             .NotBeNull()

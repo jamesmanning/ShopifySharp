@@ -11,7 +11,7 @@ namespace ShopifySharp;
 /// A request execution policy that retries failed requests with an exponentially increasing delay between each retry.
 /// The policy can be configured with a maximum number of retries, a maximum time period before the request should be canceled,
 /// or both.
-public class ExponentialRetryPolicy : IRequestExecutionPolicy
+public class ExponentialRetryPolicy : IRequestExecutionPolicy, IRequestExecutionPolicyRequiresOptions<ExponentialRetryPolicyOptions>
 {
     private readonly ExponentialRetryPolicyOptions _options;
     private readonly IResponseClassifier _responseClassifier;
@@ -96,4 +96,8 @@ public class ExponentialRetryPolicy : IRequestExecutionPolicy
         return calculatedDelay > _options.MaximumDelayBetweenRetries ? _options.MaximumDelayBetweenRetries : calculatedDelay;
     }
 
+    public static Type GetOptionsType()
+    {
+        throw new NotImplementedException();
+    }
 }
