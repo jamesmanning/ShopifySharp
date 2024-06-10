@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -54,16 +55,18 @@ public static partial class ServiceCollectionExtensions
         where TPolicy : class, IRequestExecutionPolicy, IRequestExecutionPolicyRequiresOptions<TOptions>
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
-        // TODO: make this use IOptions<T>
+        services.AddOptions();
+        services.TryAddTransient<IOptionsFactory<TOptions>, DefaultPolicyOptionsFactory<TOptions>>();
+        services.Configure(configure);
 
-        var defaultValue = TOptions.Default();
-        configure(defaultValue);
-        defaultValue.Validate();
+        // TODO: surely we could use the IOptionsFactory<TOptions> to dynamically create default options when
+        //       the user adds a policy but doesn't configure any options? Check the IOptionsMonitor<T> to see
+        //       if this might have an example.
 
-        services.TryAddPolicyFactory<TPolicy>(lifetime)
-            .Add(new ServiceDescriptor(typeof(TOptions), PolicyKey, (_, _) => defaultValue, lifetime));
+        services.TryAddPolicyFactory<TPolicy>(lifetime);
+        services.TryAddPolicyOptionsFactory<TOptions>(lifetime);
 
-        return services.TryAddPolicyOptionsFactory<TOptions>(lifetime);
+        return services;
     }
 
     private static IServiceCollection TryAddPolicyFactory<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime)
@@ -107,5 +110,30 @@ public static partial class ServiceCollectionExtensions
     {
         const string keyPrefix = "ShopifySharp.Extensions.DependencyInjection.PolicyOptions.Default.";
         return keyPrefix + policyOptionsType.Name;
+    }
+}
+
+public class DefaultPolicyOptionsFactory<TOptions>(
+    IEnumerable<IConfigureOptions<TOptions>> setups,
+    IEnumerable<IPostConfigureOptions<TOptions>> postConfigures
+) : IOptionsFactory<TOptions>
+    where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
+{
+    public TOptions Create(string name)
+    {
+        var options = TOptions.Default();
+
+        foreach (var setup in setups)
+        {
+            if (setup is IConfigureNamedOptions<TOptions> configureNamedOptions)
+                configureNamedOptions.Configure(name, options);
+            else
+                setup.Configure(options);
+        }
+
+        foreach (var postConfigure in postConfigures)
+            postConfigure.PostConfigure(name, options);
+
+        return options;
     }
 }

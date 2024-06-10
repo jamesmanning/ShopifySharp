@@ -1,5 +1,6 @@
 using ShopifySharp.Utilities;
 using System.Reflection;
+using Microsoft.Extensions.Options;
 using ShopifySharp.Infrastructure.Policies.ExponentialRetry;
 
 namespace ShopifySharp.Extensions.DependencyInjection.Tests;
@@ -244,29 +245,25 @@ public class ServiceCollectionExtensionTests
         var container = new ServiceCollection();
 
         // Act
-        container.AddShopifySharp<ExponentialRetryPolicy, ExponentialRetryPolicyOptions>(x =>
+        container.AddShopifySharp<ExponentialRetryPolicy, ExponentialRetryPolicyOptions>(_ =>
         {
-            x.FirstRetryIsImmediate = true;
-            x.InitialBackoffInMilliseconds = 1000;
         });
 
         // Assert
         var serviceProvider = container.BuildServiceProvider();
         var policy = serviceProvider.GetService<IRequestExecutionPolicy>();
+        var policyOptions = serviceProvider.GetService<IOptions<ExponentialRetryPolicyOptions>>();
 
         policy.Should()
             .NotBeNull()
             .And
             .BeOfType<ExponentialRetryPolicy>();
 
-        // options.Should()
-        //     .NotBeNull()
-        //     .And
-        //     .BeOfType<IOptions<ExponentialRetryPolicyOptions>>()
-        //     .Which
-        //     .Value
-        //     .Should()
-        //     .BeEquivalentTo(ExponentialRetryPolicyOptions.Default());
+        policyOptions.Should()
+            .NotBeNull();
+        policyOptions!.Value
+            .Should()
+            .BeEquivalentTo(ExponentialRetryPolicyOptions.Default());
     }
 
     [Fact]
