@@ -130,7 +130,7 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TOptions"></typeparam>
     public static IServiceCollection AddShopifySharp<TPolicy, TOptions>(
         this IServiceCollection services,
-        Action<TOptions> configure,
+        Action<TOptions>? configure = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TPolicy : class, IRequestExecutionPolicy, IRequestExecutionPolicyRequiresOptions<TOptions>
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()

@@ -51,18 +51,19 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TPolicy">A class that implements ShopifySharp's <see cref="IRequestExecutionPolicy"/> interface.</typeparam>
     /// <typeparam name="TOptions"></typeparam>
     public static IServiceCollection AddShopifySharpRequestExecutionPolicy<TPolicy, TOptions>(this IServiceCollection services,
-        Action<TOptions> configure,
+        Action<TOptions>? configure = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TPolicy : class, IRequestExecutionPolicy, IRequestExecutionPolicyRequiresOptions<TOptions>
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
         services.AddOptions();
         services.TryAddTransient<IOptionsFactory<TOptions>, DefaultPolicyOptionsFactory<TOptions>>();
-        services.Configure(configure);
 
         // TODO: surely we could use the IOptionsFactory<TOptions> to dynamically create default options when
         //       the user adds a policy but doesn't configure any options? Check the IOptionsMonitor<T> to see
         //       if this might have an example.
+        if (configure is not null)
+            services.Configure(configure);
 
         services.TryAddPolicyFactory<TPolicy>(lifetime);
         services.TryAddPolicyOptionsFactory<TOptions>(lifetime);
