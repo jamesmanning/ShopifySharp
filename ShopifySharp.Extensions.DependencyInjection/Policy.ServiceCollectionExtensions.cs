@@ -67,6 +67,7 @@ public static partial class ServiceCollectionExtensions
 
         services.TryAddPolicyFactory<TPolicy>(lifetime);
         services.TryAddPolicyOptionsFactory<TOptions>(lifetime);
+        services.PostConfigureAll<TOptions>(x => x.Validate());
 
         return services;
     }
