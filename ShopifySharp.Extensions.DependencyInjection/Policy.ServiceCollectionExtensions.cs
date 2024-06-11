@@ -23,7 +23,6 @@ public static partial class ServiceCollectionExtensions
     public static IServiceCollection AddShopifySharpRequestExecutionPolicy<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         where TPolicy : class, IRequestExecutionPolicy
     {
-        return services.TryAddPolicyFactory<TPolicy>(lifetime);
         // services.TryAddPolicyOptionFactories(lifetime)
         //     .TryAddPolicyFactory<TPolicy>(lifetime);
         //
@@ -38,6 +37,8 @@ public static partial class ServiceCollectionExtensions
         // }, lifetime));
         //
         // return services;
+        services.TryAddPolicyFactory<TPolicy>(lifetime);
+        return services;
     }
 
     /// <summary>
@@ -72,7 +73,7 @@ public static partial class ServiceCollectionExtensions
         return services;
     }
 
-    private static IServiceCollection TryAddPolicyFactory<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime)
+    private static void TryAddPolicyFactory<TPolicy>(this IServiceCollection services, ServiceLifetime lifetime)
         where TPolicy : class, IRequestExecutionPolicy
     {
         services.Add(new ServiceDescriptor(typeof(IRequestExecutionPolicy), PolicyKey, typeof(TPolicy), lifetime));
@@ -80,11 +81,9 @@ public static partial class ServiceCollectionExtensions
             null,
             (sp, _) => sp.GetRequiredKeyedService<IRequestExecutionPolicy>(PolicyKey),
             lifetime));
-
-        return services;
     }
 
-    private static IServiceCollection TryAddPolicyOptionsFactory<TOptions>(this IServiceCollection services, ServiceLifetime lifetime)
+    private static void TryAddPolicyOptionsFactory<TOptions>(this IServiceCollection services, ServiceLifetime lifetime)
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
         var defaultOptionsKey = GetDefaultPolicyOptionsKey(typeof(TOptions));
@@ -105,8 +104,6 @@ public static partial class ServiceCollectionExtensions
 
             return  sp.GetRequiredKeyedService<TOptions>(defaultOptionsKey);
         }, lifetime));
-
-        return services;
     }
 
     private static string GetDefaultPolicyOptionsKey(Type policyOptionsType)
