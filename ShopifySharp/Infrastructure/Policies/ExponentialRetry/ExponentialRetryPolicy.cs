@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ShopifySharp.Infrastructure;
+using ShopifySharp.Infrastructure.Policies;
 using ShopifySharp.Infrastructure.Policies.ExponentialRetry;
 using TaskScheduler = ShopifySharp.Infrastructure.TaskScheduler;
 

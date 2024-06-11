@@ -1,6 +1,4 @@
-using System;
-
-namespace ShopifySharp;
+namespace ShopifySharp.Infrastructure.Policies;
 
 public interface IRequestExecutionPolicyRequiresOptions;
 

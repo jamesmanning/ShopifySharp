@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
+using ShopifySharp.Infrastructure.Policies;
 
 namespace ShopifySharp.Extensions.DependencyInjection;
 
