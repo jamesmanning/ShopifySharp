@@ -69,11 +69,6 @@ public static partial class ServiceCollectionExtensions
     private static void TryAddPolicyOptionsFactory<TOptions>(this IServiceCollection services, ServiceLifetime lifetime)
         where TOptions : class, IRequestExecutionPolicyOptions<TOptions>, new()
     {
-        var defaultOptionsKey = GetDefaultPolicyOptionsKey(typeof(TOptions));
-
-        // TODO: make this use IOptions<T> where it's injecting TOptions.Default() and looking for TOptions from services
-
-        services.TryAdd(new ServiceDescriptor(typeof(TOptions), defaultOptionsKey, (_, _) => TOptions.Default(), lifetime));
         services.TryAdd(new ServiceDescriptor(typeof(TOptions), null, (sp, _) =>
         {
             // Always prefer to use options that were configured explicitly when possible
@@ -81,11 +76,7 @@ public static partial class ServiceCollectionExtensions
                 return keyedOptions;
 
             // Else, fallback to any IOptions that may be injected via configuration
-            // TODO: test when this is null and when it's not null – it seems to be creating a default TOptions instance with empty values
-            if (sp.GetService<IOptions<TOptions>>() is not null and var optionsWrappedValue)
-                return optionsWrappedValue.Value;
-
-            return  sp.GetRequiredKeyedService<TOptions>(defaultOptionsKey);
+            return sp.GetRequiredService<IOptions<TOptions>>().Value;
         }, lifetime));
     }
 
